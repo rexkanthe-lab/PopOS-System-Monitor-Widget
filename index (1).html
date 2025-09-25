@@ -1,0 +1,115 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced System Monitor Widget</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-200 flex items-center justify-center h-screen">
+    <button id="openWidget" class="bg-blue-600 text-white px-6 py-3 rounded-lg shadow-md hover:bg-blue-700 transition duration-200">Open System Monitor</button>
+
+    <div id="widget" class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-8 rounded-xl shadow-2xl w-96 max-w-full">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-6">System Monitor</h2>
+        <div id="options" class="grid grid-cols-1 gap-3">
+            <button class="bg-blue-100 text-blue-800 py-3 rounded-lg hover:bg-blue-200 transition duration-150" onclick="showUsage('CPU')">Check CPU Usage</button>
+            <button class="bg-blue-100 text-blue-800 py-3 rounded-lg hover:bg-blue-200 transition duration-150" onclick="showUsage('GPU')">Check GPU Usage</button>
+            <button class="bg-blue-100 text-blue-800 py-3 rounded-lg hover:bg-blue-200 transition duration-150" onclick="showUsage('Memory')">Check Memory Usage</button>
+            <button class="bg-blue-100 text-blue-800 py-3 rounded-lg hover:bg-blue-200 transition duration-150" onclick="showUsage('Disk')">Check Disk Usage</button>
+            <button class="bg-blue-100 text-blue-800 py-3 rounded-lg hover:bg-blue-200 transition duration-150" onclick="showUsage('Network')">Check Network Usage</button>
+            <button class="bg-blue-100 text-blue-800 py-3 rounded-lg hover:bg-blue-200 transition duration-150" onclick="showUsage('Battery')">Check Battery Status</button>
+        </div>
+        <div id="usageDisplay" class="mt-6 text-center text-lg text-gray-700 font-medium"></div>
+        <button id="closeWidget" class="mt-6 w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition duration-150">Close</button>
+    </div>
+
+    <script>
+        // Simulated system usage data (browser restrictions prevent direct access to most system metrics)
+        function getSimulatedUsage(type) {
+            const usage = {
+                CPU: Math.floor(Math.random() * 100),
+                GPU: Math.floor(Math.random() * 100),
+                Memory: Math.floor(Math.random() * 100),
+                Disk: Math.floor(Math.random() * 100),
+                Network: Math.floor(Math.random() * 1000) + ' KB/s',
+                Battery: Math.floor(Math.random() * 100) + '%'
+            };
+            return `${type}: ${usage[type]}`;
+        }
+
+        // Show usage for selected option
+        function showUsage(type) {
+            const usageDisplay = document.getElementById('usageDisplay');
+            usageDisplay.innerHTML = getSimulatedUsage(type);
+            // Add animation for displaying usage
+            usageDisplay.classList.add('animate-pulse');
+            setTimeout(() => usageDisplay.classList.remove('animate-pulse'), 500);
+        }
+
+        // Toggle widget visibility with animation
+        const widget = document.getElementById('widget');
+        const openWidget = document.getElementById('openWidget');
+        const closeWidget = document.getElementById('closeWidget');
+
+        openWidget.addEventListener('click', () => {
+            widget.classList.remove('hidden');
+            widget.classList.add('animate-fade-in');
+        });
+
+        closeWidget.addEventListener('click', () => {
+            widget.classList.add('hidden');
+            document.getElementById('usageDisplay').innerHTML = '';
+        });
+    </script>
+
+    <style>
+        /* Custom animation for fade-in effect */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -60%) scale(0.95); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+    </style>
+</body>
+</html>
